@@ -9,7 +9,7 @@ import {
 import {
   createInitialState, updateGame, handleToolAction, switchMap, spawnText, handleFishingAction,
 } from "../game/GameEngine";
-import { renderGame, preloadAssets } from "../game/Renderer";
+import { renderGame, preloadAssets, addRipple } from "../game/Renderer";
 import { supabase } from "../game/supabase";
 import { checkSolanaNFT } from "../game/blockchain";
 import { applyNFTBoostsToState } from "../game/playerState";
@@ -1157,6 +1157,9 @@ export default function FarmingGame() {
     const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
     const my = (e.clientY - rect.top) * (canvas.height / rect.height);
     
+    // Add interaction ripple
+    addRipple(mx, my);
+
     const ps = s.player;
     const oldStep = ps.tutorialStep;
     stateRef.current = handleToolAction(stateRef.current, mx, my);
@@ -1335,6 +1338,10 @@ export default function FarmingGame() {
             if (mobilePanRef.current !== null) return;
 
             const rect = canvas.getBoundingClientRect();
+            const mx = (t.clientX - rect.left) * (canvas.width / rect.width);
+            const my = (t.clientY - rect.top) * (canvas.height / rect.height);
+            addRipple(mx, my);
+
             const dir = getTouchQuadrant(
               t.clientX - rect.left,
               t.clientY - rect.top,
@@ -1502,15 +1509,15 @@ export default function FarmingGame() {
         );
       })}
 
-      {/* â”€â”€ SPLASH â”€â”€ */}
+      {/* ── SPLASH ── */}
       {!splashDone && <SplashScreen onSelectMap={handleSplashSelect} />}
 
-      {/* â”€â”€ PRE-FARM TUTORIAL â”€â”€ */}
+      {/* ── PRE-FARM TUTORIAL ── */}
       {splashDone && !introTutorialDone && (
         <PreFarmTutorial visible={true} onFinished={handlePreFarmTutorialFinished} onMapFocus={handlePreFarmMapFocus} />
       )}
 
-      {/* â”€â”€ WORLD MAP (shown after tutorial on desktop + mobile) â”€â”€ */}
+      {/* ── WORLD MAP (shown after tutorial on desktop + mobile) ── */}
       {splashDone && introTutorialDone && !ds.demoMode && showWorldMap && (
         <WorldMapScreen
           onSelectMap={(map) => {
@@ -1523,7 +1530,7 @@ export default function FarmingGame() {
         />
       )}
 
-      {/* â”€â”€ MOBILE HUD (compact, single screen) â€” hidden when WorldMapScreen is open â”€â”€ */}
+      {/* ── MOBILE HUD (compact, single screen) — hidden when WorldMapScreen is open ── */}
       {isMobile && splashDone && introTutorialDone && !ds.demoMode && !showWorldMap && (
         <MobileHUD
           ds={ds}
@@ -1618,36 +1625,53 @@ export default function FarmingGame() {
         />
       )}
 
-      {/* â”€â”€ DESKTOP TOP NAV â”€â”€ */}
+      {/* ── DESKTOP TOP NAV ── */}
       {!isMobile && splashDone && introTutorialDone && worldMapDone && !showWorldMap && (
-        <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 8, alignItems: "center" }}>
-          {/* â”€â”€ MAP BUTTON â”€â”€ */}
+        <div style={{ position: "absolute", top: 24, right: 24, display: "flex", gap: 12, alignItems: "center", zIndex: 1200 }}>
+          {/* MAP BUTTON */}
           <button
-            className="wb gf"
+            className="gf"
             onClick={() => { setShowWorldMap(true); AudioManager.playSFX("click"); }}
             style={{
-              background: "linear-gradient(180deg, #CE9E64 0%, #8D5A32 100%)",
-              border: "3px solid #D4AF37",
-              boxShadow: "0 4px 0 #3a2212, 0 0 8px rgba(212,175,55,0.3)",
-              color: "#FFF5E0",
-              fontSize: 7,
-              padding: "8px 14px",
-              letterSpacing: 1,
+              background: "linear-gradient(135deg, #65C7F7 0%, #0052D4 100%)",
+              border: "2px solid #FFFFFF",
+              borderRadius: "99px",
+              boxShadow: "0 10px 20px rgba(0,82,212,0.3)",
+              color: "#FFFFFF",
+              fontSize: 10,
+              fontWeight: 800,
+              padding: "10px 24px",
+              fontFamily: "'Outfit', sans-serif",
+              cursor: "pointer",
             }}
           >
-            MAP
+            WORLD MAP
           </button>
-          <div className="wb gf" style={{ color: "#FFFFFF", padding: "6px 15px", pointerEvents: "none" }}>LVL {ds.player.level}</div>
-          <button className="wb gf" onClick={() => { setActivePanel("quests"); AudioManager.playSFX("click"); }} style={{ position: "relative" }}>
-            TASKS
-            {claimableQuests.length > 0 && <span style={{ position: "absolute", top: -6, right: -4, color: "#FFFFFF", fontSize: 14, lineHeight: 1, fontWeight: "bold", textShadow: "0 0 4px #000" }}>!</span>}
+
+          {/* Nav Group */}
+          <div style={{
+            display: "flex", gap: 10, background: "rgba(12,20,37,0.7)",
+            backdropFilter: "blur(12px)", padding: "8px 16px", borderRadius: "99px",
+            border: "1.5px solid rgba(255,255,255,0.15)", boxShadow: "0 15px 35px rgba(0,0,0,0.3)"
+          }}>
+            <div className="gf" style={{ color: "#FFFFFF", fontWeight: 700, fontSize: 13, fontFamily: "'Outfit', sans-serif" }}>LVL {ds.player.level}</div>
+            <div style={{ width: 1.5, height: 18, background: "rgba(255,255,255,0.2)" }} />
+            
+            <button className="gf" onClick={() => { setActivePanel("quests"); AudioManager.playSFX("click"); }} style={{ background: "none", border: "none", color: "#FFF", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Outfit', sans-serif", position: "relative" }}>
+              TASKS
+              {claimableQuests.length > 0 && <span style={{ position: "absolute", top: -4, right: -10, width: 8, height: 8, background: "#FF7EB3", borderRadius: "50%", border: "1.5px solid #FFF", boxShadow: "0 0 8px #FF7EB3" }} />}
+            </button>
+
+            <button className="gf" onClick={() => { setActivePanel("inventory"); AudioManager.playSFX("click"); }} style={{ background: "none", border: "none", color: "#FFF", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>ITEMS</button>
+            <button className="gf" onClick={() => { setActivePanel("nft"); AudioManager.playSFX("click"); }} style={{ background: "none", border: "none", color: "#FFF", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>MY NFTS</button>
+            
+            <div style={{ width: 1.5, height: 18, background: "rgba(255,255,255,0.2)" }} />
+            <div ref={goldHudRef} className="gf" style={{ color: "#FFD700", fontSize: 13, fontWeight: 800, fontFamily: "'Outfit', sans-serif" }}>{ds.player.gold} GOLD</div>
+          </div>
+
+          <button className="gf" style={{ background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "99px", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 8px 16px rgba(0,0,0,0.1)" }} onClick={() => { setActivePanel("settings"); AudioManager.playSFX("click"); }}>
+            <span style={{ fontSize: 18 }}>⚙️</span>
           </button>
-          <button className="wb gf" onClick={() => { setActivePanel("inventory"); AudioManager.playSFX("click"); }}>ITEMS</button>
-          <button className="wb gf" onClick={() => { setActivePanel("nft"); AudioManager.playSFX("click"); }}>MY NFTS</button>
-          <div ref={goldHudRef} className="wb gf" style={{ color: "#FFD700", padding: "8px 20px", fontSize: 13, border: "2px solid #FFD700", boxShadow: "0 0 10px rgba(255,215,0,0.4)", pointerEvents: "none" }}>GOLD {ds.player.gold}</div>
-          <div className="wb gf" style={{ color: "#FFFFFF", padding: "6px 12px", pointerEvents: "none" }}>{ds.player.lifetopiaGold} LFG</div>
-          <button className="wb gf" style={{ fontSize: 10, padding: "6px 10px" }} onClick={() => { setActivePanel("settings"); AudioManager.playSFX("click"); }}>SET</button>
-          {ds.nftBoostActive && <div className="wb gf" style={{ color: "#FFFFFF", padding: "6px 12px", pointerEvents: "none", fontSize: 6, borderColor: "#5C4033", background: "linear-gradient(180deg,#CE9E64 0%,#8D5A32 100%)" }}>BOOST ACTIVE</div>}
         </div>
       )}
 

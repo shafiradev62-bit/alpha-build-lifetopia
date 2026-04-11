@@ -187,109 +187,127 @@ export default function WorldMapScreen({ onSelectMap }: Props) {
           const hitW = 120 * curSc, hitH = 120 * curSc;
           const isSel = IS_EDITOR && selId === spot.id;
           return (
-            <div
-              key={spot.id}
-              onMouseDown={(e) => {
-                if (!IS_EDITOR) return;
-                e.stopPropagation(); setSelId(spot.id);
-                draggingSpot.current = { id: spot.id, smx: e.clientX, smy: e.clientY, scx: spot.cx, scy: spot.cy };
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (IS_EDITOR) { setSelId(spot.id); return; }
-                if (!cine) triggerCinematic(spot);
-              }}
-              style={{
-                position: "absolute",
-                left: `calc(${spot.cx}% - ${hitW / 2}px)`,
-                top: `calc(${spot.cy}% - ${hitH / 2}px)`,
-                width: hitW, height: hitH,
-                cursor: IS_EDITOR ? "move" : "pointer",
-                border: isSel ? "2px dashed #00FFFF" : IS_EDITOR ? "1px dashed rgba(255,215,0,0.4)" : "none",
-                borderRadius: 8,
-                display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "flex-end",
-                pointerEvents: cine ? "none" : "auto",
-              }}
-            >
-              {/* Label below hotspot */}
-              <div style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: Math.max(7, 9 * Math.max(0.5, curSc * 0.5)),
-                color: "#FFD700",
-                textShadow: "1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000",
-                whiteSpace: "nowrap",
-                marginBottom: -Math.max(14, 18 * curSc),
-                pointerEvents: "none",
-              }}>{spot.label}</div>
-            </div>
-          );
-        })}
+             <div
+               key={spot.id}
+               onMouseDown={(e) => {
+                 if (!IS_EDITOR) return;
+                 e.stopPropagation(); setSelId(spot.id);
+                 draggingSpot.current = { id: spot.id, smx: e.clientX, smy: e.clientY, scx: spot.cx, scy: spot.cy };
+               }}
+               onClick={(e) => {
+                 e.stopPropagation();
+                 if (IS_EDITOR) { setSelId(spot.id); return; }
+                 if (!cine) triggerCinematic(spot);
+               }}
+               style={{
+                 position: "absolute",
+                 left: `calc(${spot.cx}% - ${hitW / 2}px)`,
+                 top: `calc(${spot.cy}% - ${hitH / 2}px)`,
+                 width: hitW, height: hitH,
+                 cursor: IS_EDITOR ? "move" : "pointer",
+                 border: isSel ? "2px dashed #00FFFF" : IS_EDITOR ? "1px dashed rgba(255,215,0,0.4)" : "none",
+                 borderRadius: 12,
+                 display: "flex", flexDirection: "column",
+                 alignItems: "center", justifyContent: "flex-end",
+                 pointerEvents: cine ? "none" : "auto",
+               }}
+             >
+               {/* Label below hotspot - Modern Premium Look */}
+               <div style={{
+                 fontFamily: "'Outfit', sans-serif",
+                 fontWeight: 800,
+                 fontSize: Math.max(10, 14 * Math.max(0.5, curSc * 0.5)),
+                 color: "#FFFFFF",
+                 background: "rgba(12,20,37,0.7)",
+                 backdropFilter: "blur(4px)",
+                 padding: "4px 12px",
+                 borderRadius: "12px",
+                 border: "1.5px solid rgba(255,215,0,0.3)",
+                 textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                 whiteSpace: "nowrap",
+                 marginBottom: -Math.max(16, 22 * curSc),
+                 pointerEvents: "none",
+                 boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
+               }}>{spot.label}</div>
+             </div>
+           );
+         })}
+       </div>
+ 
+       {/* Hint - Modern Centered Bubble */}
+       {!cine && !IS_EDITOR && (
+         <div style={{
+           position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)",
+           fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 700,
+           color: "#2D1B0D", background: "rgba(255, 255, 255, 0.95)",
+           padding: "8px 20px", borderRadius: "99px",
+           boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+           border: "2px solid #FFFFFF",
+           pointerEvents: "none", whiteSpace: "nowrap",
+           letterSpacing: "0.5px",
+         }}>TAP A LOCATION TO TRAVEL</div>
+       )}
+ 
+       {/* Editor panel - Modernized */}
+       {IS_EDITOR && (
+         <div style={{
+           position: "absolute", top: 16, right: 16, zIndex: 9999,
+           background: "rgba(255, 255, 255, 0.95)", border: "2px solid #FFF",
+           borderRadius: 20, padding: 20, width: 240,
+           fontFamily: "'Outfit', sans-serif", color: "#2D1B0D",
+           boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+         }} onMouseDown={e => e.stopPropagation()}>
+           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>MAP EDITOR</div>
+           <div style={{ fontSize: 10, color: "#666", marginBottom: 16 }}>Drag hotspot areas on map</div>
+           {editorSpots.map(h => (
+             <div key={h.id} onClick={() => setSelId(h.id)} style={{
+               padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 11, fontWeight: 600, marginBottom: 6,
+               background: selId === h.id ? "linear-gradient(135deg, #65C7F7 0%, #0052D4 100%)" : "rgba(0,0,0,0.05)",
+               color: selId === h.id ? "#FFF" : "#2D1B0D",
+               transition: "all 0.2s",
+             }}>{h.label}</div>
+           ))}
+           {selSpot && (
+             <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)", paddingTop: 16, marginTop: 10 }}>
+               <div style={{ fontSize: 11, color: "#333", marginBottom: 12, fontWeight: 700 }}>X: {selSpot.cx.toFixed(1)}%  Y: {selSpot.cy.toFixed(1)}%</div>
+               <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>SIZE: {selSpot.iconSize}px</div>
+               <input type="range" min={60} max={400} value={selSpot.iconSize}
+                 onChange={e => setEditorSpots(prev => prev.map(h => h.id === selId ? { ...h, iconSize: +e.target.value } : h))}
+                 style={{ width: "100%", accentColor: "#FF7EB3", marginBottom: 12 }} />
+               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                 {([["X-", -0.5, 0], ["X+", 0.5, 0], ["Y-", 0, -0.5], ["Y+", 0, 0.5]] as [string, number, number][]).map(([l, dx, dy]) => (
+                   <button key={l} onClick={() => setEditorSpots(prev => prev.map(h => h.id === selId
+                     ? { ...h, cx: Math.max(0, Math.min(100, h.cx + dx)), cy: Math.max(0, Math.min(100, h.cy + dy)) } : h))}
+                     style={{ 
+                       fontFamily: "'Outfit', sans-serif", fontSize: 10, fontWeight: 800, 
+                       background: "#FFF", border: "1.5px solid rgba(0,0,0,0.1)", color: "#2D1B0D", 
+                       borderRadius: 8, padding: "6px 0", cursor: "pointer",
+                       transition: "background 0.2s",
+                     }}>{l}</button>
+                 ))}
+               </div>
+             </div>
+           )}
+           <button onClick={() => {
+             const out = JSON.stringify(editorSpots.map(h => ({ id: h.id, cx: +h.cx.toFixed(1), cy: +h.cy.toFixed(1), iconSize: h.iconSize })), null, 2);
+             localStorage.setItem("map_hotspots_v2", out);
+             alert("Saved!\n\n" + out);
+           }} style={{
+             marginTop: 16, width: "100%", fontFamily: "'Outfit', sans-serif",
+             fontSize: 12, fontWeight: 800, padding: "10px 0", borderRadius: 12, cursor: "pointer",
+             background: "linear-gradient(135deg, #FF7EB3 0%, #FF758C 100%)", color: "#FFF", border: "none",
+             boxShadow: "0 8px 16px rgba(255, 117, 140, 0.3)",
+           }}>SAVE & COPY</button>
+         </div>
+       )}
+ 
+        {/* Flash Overlay */}
+        <div style={{
+          position: "absolute", inset: 0, background: "#fff",
+          opacity: flashId ? 1 : 0,
+          transition: flashId ? "opacity 0.2s ease-in" : "none",
+          pointerEvents: "none", zIndex: 200,
+        }} />
       </div>
-
-      {/* Hint */}
-      {!cine && !IS_EDITOR && (
-        <div style={{
-          position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)",
-          fontFamily: "'Press Start 2P', monospace", fontSize: 8,
-          color: "rgba(255,215,0,0.7)", textShadow: "1px 1px 0 #000",
-          pointerEvents: "none", whiteSpace: "nowrap",
-        }}>TAP A LOCATION TO TRAVEL</div>
-      )}
-
-      {/* Editor panel */}
-      {IS_EDITOR && (
-        <div style={{
-          position: "absolute", top: 10, right: 10, zIndex: 9999,
-          background: "rgba(10,8,4,0.95)", border: "2px solid #FFD700",
-          borderRadius: 12, padding: 14, width: 220,
-          fontFamily: "'Press Start 2P', monospace", color: "#FFD700",
-        }} onMouseDown={e => e.stopPropagation()}>
-          <div style={{ fontSize: 8, marginBottom: 8 }}>MAP EDITOR</div>
-          <div style={{ fontSize: 5, color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>Drag hotspot areas on map</div>
-          {editorSpots.map(h => (
-            <div key={h.id} onClick={() => setSelId(h.id)} style={{
-              padding: "4px 8px", borderRadius: 6, cursor: "pointer", fontSize: 6, marginBottom: 4,
-              background: selId === h.id ? "#FFD700" : "rgba(255,255,255,0.08)",
-              color: selId === h.id ? "#000" : "#FFD700",
-              border: "1px solid " + (selId === h.id ? "#FFD700" : "rgba(255,215,0,0.2)"),
-            }}>{h.label}</div>
-          ))}
-          {selSpot && (
-            <div style={{ borderTop: "1px solid rgba(255,215,0,0.2)", paddingTop: 10, marginTop: 6 }}>
-              <div style={{ fontSize: 6, color: "#fff", marginBottom: 8 }}>X: {selSpot.cx.toFixed(1)}%  Y: {selSpot.cy.toFixed(1)}%</div>
-              <div style={{ fontSize: 5, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>SIZE: {selSpot.iconSize}px</div>
-              <input type="range" min={60} max={400} value={selSpot.iconSize}
-                onChange={e => setEditorSpots(prev => prev.map(h => h.id === selId ? { ...h, iconSize: +e.target.value } : h))}
-                style={{ width: "100%", accentColor: "#FFD700", marginBottom: 8 }} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-                {([["X-", -0.5, 0], ["X+", 0.5, 0], ["Y-", 0, -0.5], ["Y+", 0, 0.5]] as [string, number, number][]).map(([l, dx, dy]) => (
-                  <button key={l} onClick={() => setEditorSpots(prev => prev.map(h => h.id === selId
-                    ? { ...h, cx: Math.max(0, Math.min(100, h.cx + dx)), cy: Math.max(0, Math.min(100, h.cy + dy)) } : h))}
-                    style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, background: "rgba(255,215,0,0.15)", border: "1px solid #FFD700", color: "#FFD700", borderRadius: 4, padding: "4px 2px", cursor: "pointer" }}>{l}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          <button onClick={() => {
-            const out = JSON.stringify(editorSpots.map(h => ({ id: h.id, cx: +h.cx.toFixed(1), cy: +h.cy.toFixed(1), iconSize: h.iconSize })), null, 2);
-            localStorage.setItem("map_hotspots_v2", out);
-            alert("Saved!\n\n" + out);
-          }} style={{
-            marginTop: 12, width: "100%", fontFamily: "'Press Start 2P', monospace",
-            fontSize: 7, padding: "8px 0", borderRadius: 8, cursor: "pointer",
-            background: "linear-gradient(180deg,#FFD700,#C8A020)", color: "#000", border: "none",
-          }}>SAVE & COPY</button>
-        </div>
-      )}
-
-      {/* Flash */}
-      <div style={{
-        position: "absolute", inset: 0, background: "#fff",
-        opacity: flashId ? 1 : 0,
-        transition: flashId ? "opacity 0.2s ease-in" : "none",
-        pointerEvents: "none", zIndex: 20,
-      }} />
-    </div>
-  );
+    );
 }

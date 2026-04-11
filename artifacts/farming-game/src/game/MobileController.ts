@@ -92,13 +92,14 @@ export function openWalletDeepLink(walletType: "phantom" | "solflare" | "backpac
 
   // Mobile web browser
   if (walletType === "phantom") {
-    // Try phantom:// scheme first (installed app), fallback to universal link
-    const phantomScheme = `phantom://ul/v1/connect?app_url=${encodeURIComponent(httpsUrl || "https://lifetopia.io")}&redirect_link=${encodeURIComponent(window.location.origin + "/?callback=phantom")}&cluster=mainnet-beta`;
-    window.location.href = phantomScheme;
+    // Preferred: Use browse link so user stays in Phantom Browser where window.solana is injected
+    const browseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(httpsUrl || window.location.origin)}?ref=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = browseUrl;
     return true;
   }
-  if (walletType === "solflare" && httpsUrl) {
-    window.location.href = `https://solflare.com/ul/v1/connect?app_url=${encodeURIComponent(httpsUrl)}&redirect_link=${encodeURIComponent(window.location.origin + "/?callback=solflare")}&cluster=mainnet-beta`;
+  if (walletType === "solflare") {
+    const browseUrl = `https://solflare.com/ul/v1/browse/${encodeURIComponent(httpsUrl || window.location.origin)}?ref=${encodeURIComponent(window.location.origin)}`;
+    window.location.href = browseUrl;
     return true;
   }
   // Generic fallback
@@ -250,22 +251,40 @@ export function setupWalletDeepLinkHandler() {
   // Handle Capacitor's appUrlOpen event (fires when app is opened via deep link)
   const handleAppUrlOpen = (data: { url?: string }) => {
     if (!data?.url) return;
-    console.log("[DeepLink] appUrlOpen:", data.url);
-    const url = new URL(data.url);
-    // Parse address from various wallet callback formats
-    const addr =
-      url.searchParams.get("address") ||
-      url.searchParams.get("pubkey") ||
-      url.searchParams.get("public_key") ||
-      url.searchParams.get("pk") ||
-      url.searchParams.get("wallet") ||
-      url.hostname; // fallback: use host as address
-    const type = url.searchParams.get("type") || "solana";
-    if (addr) {
-      console.log("[DeepLink] Parsed wallet address:", addr);
-      window.dispatchEvent(new CustomEvent("wallet-connected", {
-        detail: { address: addr, type },
-      }));
+    console.log("[DeepLink] appUrlOpen raw:", data.url);
+    
+    try {
+      const url = new URL(data.url);
+      // 1. Check search params
+      let addr =
+        url.searchParams.get("address") ||
+        url.searchParams.get("pubkey") ||
+        url.searchParams.get("public_key") ||
+        url.searchParams.get("pk") ||
+        url.searchParams.get("wallet") ||
+        url.searchParams.get("addr");
+
+      // 2. Check hash (some redirects use fragments)
+      if (!addr && url.hash) {
+        const hashParams = new URLSearchParams(url.hash.substring(1));
+        addr = hashParams.get("address") || hashParams.get("public_key") || hashParams.get("pk");
+      }
+
+      // 3. Fallback: Check if hostname looks like a Solana address (44 chars)
+      if (!addr && url.hostname && url.hostname.length >= 32 && url.hostname.length <= 48) {
+        addr = url.hostname;
+      }
+
+      const type = url.searchParams.get("type") || "solana";
+      
+      if (addr && addr !== "wallet-callback") {
+        console.log("[DeepLink] Successfully parsed address:", addr);
+        window.dispatchEvent(new CustomEvent("wallet-connected", {
+          detail: { address: addr, type },
+        }));
+      }
+    } catch (e) {
+      console.error("[DeepLink] Parse error:", e);
     }
   };
 

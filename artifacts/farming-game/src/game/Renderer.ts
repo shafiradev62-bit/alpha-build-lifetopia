@@ -133,13 +133,14 @@ export function renderGame(
   const sx = shakeAmt > 0.5 ? (Math.sin(state.time * 0.3) * shakeAmt * 0.5) : 0;
   const sy = shakeAmt > 0.5 ? (Math.cos(state.time * 0.4) * shakeAmt * 0.5) : 0;
 
-  // Clear screen with dark background
-  ctx.fillStyle = "#1a1a2e";
+  // Clear screen with a rich, dark professional background
+  ctx.fillStyle = "#0c1425";
   ctx.fillRect(0, 0, W, H);
   // Hard reset any leaked state from previous frame
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = "source-over";
   ctx.filter = "none";
+  ctx.imageSmoothingEnabled = true; // Premium look
 
   ctx.save();
   ctx.translate(-camX + sx, -camY + sy);
@@ -172,7 +173,18 @@ export function renderGame(
   }
 
   drawFootprints(ctx, state);
+  
+  // SQUASH & STRETCH Juice
+  const isMoving = Math.hypot(state.player.vx, state.player.vy) > 0.1;
+  const squash = isMoving ? 1 + Math.sin(state.time / 80) * 0.05 : 1;
+  const stretch = isMoving ? 1 - Math.sin(state.time / 80) * 0.05 : 1;
+  
+  ctx.save();
+  ctx.translate(state.player.x, state.player.y);
+  ctx.scale(squash, stretch);
+  ctx.translate(-state.player.x, -state.player.y);
   drawPlayer(ctx, state);
+  ctx.restore();
   
   if (state.currentMap === "fishing")
     drawFishingBiteAlert(ctx, state);
@@ -180,11 +192,13 @@ export function renderGame(
   // FOREGROUND PARALLAX
   drawParallaxForeground(ctx, state);
 
-  // AVATAR WORLD AMBIENT — world-space effects (disabled if causing issues)
+  // AVATAR WORLD AMBIENT — world-space effects
   if (state.currentMap !== "city") {
     drawBirds(ctx, state);
     drawGroundMist(ctx, state);
     drawAmbientFireflies(ctx, state);
+    drawClouds(ctx, state); 
+    drawGodRays(ctx, state, W, H); // Add cinematic sunbeams
   }
 
   drawVFX(ctx, state);
@@ -198,8 +212,12 @@ export function renderGame(
   ctx.restore();
 
   // HUD & UI OVERLAYS (Drawn in screenspace)
-  // Day/night cycle tint — applied over the whole screen
+  // Day/night cycle tint — applied over the whole screen with smoother blending
   drawDayCycleTint(ctx, state, W, H);
+  
+  // Premium Post-Processing: Global Vibrance & Contrast
+  // This simulates the "Avatar World" high-quality look
+  drawGlobalPostEffects(ctx, state, W, H);
 
   if (state.currentMap === "garden" && state.gardenActivePlayers >= 0) {
     drawGardenPlayersHud(ctx, state, W, H);
@@ -207,6 +225,7 @@ export function renderGame(
 
   drawMiniMap(ctx, state, W, H);
   drawLifeParticles(ctx, state, W, H);
+  drawInteractionRipples(ctx, state, W, H); // Add click ripples
   drawMapTransition(ctx, state, W, H);
 }
 
@@ -249,12 +268,15 @@ function drawMapTransition(ctx: CanvasRenderingContext2D, state: GameState, W: n
   ctx.restore();
 }
 
-/** Professional elliptical shadow for NPCs and Player */
+/** Professional elliptical shadow for NPCs and Player with soft falloff */
 function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  const grd = ctx.createRadialGradient(x, y + 2, 0, x, y + 2, r);
+  grd.addColorStop(0, "rgba(0,0,0,0.35)");
+  grd.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grd;
   ctx.beginPath();
-  ctx.ellipse(x, y + 2, r, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 2, r, r * 0.45, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -2452,4 +2474,97 @@ function drawGroundMist(ctx: CanvasRenderingContext2D, state: GameState) {
     ctx.fill();
   }
   ctx.restore();
+}
+/** Premium Post-Processing: Global Vibrance, Contrast, and Vignette */
+function drawGlobalPostEffects(ctx: CanvasRenderingContext2D, state: GameState, W: number, H: number) {
+  // 1. Subtle Global Shine / Bloom Bloom
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.03;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // 2. Pro Vignette for depth
+  const grd = ctx.createRadialGradient(W/2, H/2, W/4, W/2, H/2, W*0.8);
+  grd.addColorStop(0, "rgba(0,0,0,0)");
+  grd.addColorStop(1, "rgba(0,0,0,0.18)");
+  ctx.save();
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // 3. Screen Tint based on map context (Warmth/Colness)
+  ctx.save();
+  if (state.currentMap === "garden") {
+    ctx.fillStyle = "rgba(40, 255, 100, 0.02)"; // Lush green boost
+  } else if (state.currentMap === "city") {
+    ctx.fillStyle = "rgba(100, 100, 255, 0.02)"; // Modern cool blue boost
+  } else if (state.currentMap === "fishing") {
+    ctx.fillStyle = "rgba(0, 200, 255, 0.03)"; // Deep water boost
+  }
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+/** Cinematic Sunbeams (God Rays) */
+function drawGodRays(ctx: CanvasRenderingContext2D, state: GameState, W: number, H: number) {
+  const { time, currentMap } = state;
+  if (currentMap !== "home" && currentMap !== "garden") return;
+  
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const numRays = 4;
+  for (let i = 0; i < numRays; i++) {
+    const angle = 0.6 + Math.sin(time / 4000 + i) * 0.05;
+    const x = -200 + i * 400 + Math.sin(time / 5000) * 50;
+    const opacity = 0.04 + Math.sin(time / 2000 + i) * 0.02;
+    
+    ctx.globalAlpha = opacity;
+    const grd = ctx.createLinearGradient(x, 0, x + 400, 800);
+    grd.addColorStop(0, "rgba(255, 255, 200, 1)");
+    grd.addColorStop(1, "rgba(255, 255, 200, 0)");
+    
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(x, -100);
+    ctx.lineTo(x + 150, -100);
+    ctx.lineTo(x + 500, 900);
+    ctx.lineTo(x + 250, 900);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** Interaction Ripples for Taps/Clicks */
+export const ripples: Array<{x: number; y: number; r: number; a: number}> = [];
+
+function drawInteractionRipples(ctx: CanvasRenderingContext2D, state: GameState, W: number, H: number) {
+  ctx.save();
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i];
+    r.r += 2.5;
+    r.a -= 0.025;
+    if (r.a <= 0) { ripples.splice(i, 1); continue; }
+    
+    ctx.globalAlpha = r.a;
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Outer faint glow
+    ctx.globalAlpha = r.a * 0.3;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r + 5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export function addRipple(x: number, y: number) {
+  ripples.push({ x, y, r: 5, a: 0.65 });
 }
